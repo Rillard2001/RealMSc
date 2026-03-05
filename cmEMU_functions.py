@@ -193,7 +193,20 @@ def get_output(emu, num_rounds, label, batch_size):
 
     output = SimpleNamespace(**everything_merged)  # here we make it so that we can use out.PS
 
+
     return output
+
+
+def get_unique(data):
+
+    data.k = np.unique(data.k)
+    data.PS_redshifts = np.unique(data.PS_redshifts)
+    data.redshifts = np.unique(data.redshifts)
+    data.PS_ks = np.unique(data.PS_ks)
+    data.Muv = np.unique(data.Muv)
+    data.UVLF_redshifts = np.unique(data.UVLF_redshifts)
+
+    return data
 
 
 def corner_plot(dataframe, title, filename, samples = None):
@@ -251,12 +264,12 @@ def plotting_PS(true_data, emulated_data, fixed, size, k, z, filename):
 
         for i, c in zip(rand, cs):
 
-            plt.plot(np.unique(true_data.PS_redshifts), true_data.PS[i, :, k], lw = 2, ls = '-', color = c)
-            plt.plot(np.unique(true_data.PS_redshifts), emulated_data[i, :, k], lw = 2, ls = '-.', color = c)
+            plt.plot(true_data.PS_redshifts, true_data.PS[i, :, k], lw = 2, ls = '-', color = c)
+            plt.plot(true_data.PS_redshifts, emulated_data[i, :, k], lw = 2, ls = '-.', color = c)
         
         plt.ylabel(r'$\Delta_{21}^2$ [mk$^2$]', fontsize = fs)
         plt.xlabel(r'Redshift z', fontsize = fs)
-        plt.xlim(np.unique(true_data.PS_redshifts)[0] - 0.1, np.unique(true_data.PS_redshifts)[-1] + 0.1)
+        plt.xlim(true_data.PS_redshifts[0] - 0.1, true_data.PS_redshifts[-1] + 0.1)
         plt.yticks(fontsize = fs)
         plt.xticks(fontsize = fs)
         plt.yscale('log')
@@ -268,12 +281,12 @@ def plotting_PS(true_data, emulated_data, fixed, size, k, z, filename):
 
         for i, c in zip(rand, cs):
 
-            plt.plot(np.unique(true_data.k), true_data.PS[i, z, :], lw = 2, ls = '-', color = c)
-            plt.plot(np.unique(true_data.k), emulated_data[i, z, :], lw = 2, ls = '-.', color = c)
+            plt.plot(true_data.k, true_data.PS[i, z, :], lw = 2, ls = '-', color = c)
+            plt.plot(true_data.k, emulated_data[i, z, :], lw = 2, ls = '-.', color = c)
     
         plt.ylabel(r'$\Delta_{21}^2$ [mk$^2$]', fontsize = fs)
         plt.xlabel(r'k (Mpc$^{-1}$)', fontsize = fs)
-        plt.xlim(np.unique(true_data.k)[0] - 1e-2, np.unique(true_data.k)[-1] + 1e-2)
+        plt.xlim(true_data.k[0] - 1e-2, true_data.k[-1] + 1e-2)
         plt.yticks(fontsize = fs)
         plt.xticks(fontsize = fs)
         plt.yscale('log')
