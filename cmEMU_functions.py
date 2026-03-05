@@ -233,7 +233,7 @@ def corner_plot(dataframe, title, filename, samples = None):
     plt.show()
 
 
-def plotting_PS(true_data, emulated_data, fixed, size, k, z):
+def plotting_PS(true_data, emulated_data, fixed, size, k, z, filename):
 
     rand = np.random.randint(0, len(true_data.PS), size = size)
 
@@ -261,6 +261,7 @@ def plotting_PS(true_data, emulated_data, fixed, size, k, z):
         plt.xticks(fontsize = fs)
         plt.yscale('log')
         plt.title('21cmEMU Power Spectrum', fontsize = fs)
+        plt.savefig(filename, dpi = 300)
         plt.show()
             
     else:
@@ -277,6 +278,7 @@ def plotting_PS(true_data, emulated_data, fixed, size, k, z):
         plt.xticks(fontsize = fs)
         plt.yscale('log')
         plt.title('21cmEMU Power Spectrum', fontsize = fs)
+        plt.savefig(filename, dpi = 300)
         plt.show()
 
 
