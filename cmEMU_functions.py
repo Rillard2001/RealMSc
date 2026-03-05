@@ -209,6 +209,44 @@ def get_unique(data):
     return data
 
 
+def low_PS(data, k_cut, method, eta):
+
+    #Gaussian
+
+    if method == 'Gaussian':
+
+        gauss = np.exp( - np.power(data.k / k_cut, 2))
+        low_train_gauss = data.PS * gauss
+
+        return low_train_gauss
+
+
+    #Sharp cut
+
+    elif method == 'SharpCut':
+
+        low_train_sharp = np.zeros_like(data.PS)
+        for idx, k_value in enumerate(data.k):
+            if k_value < k_cut:
+                low_train_sharp = data.PS[:, :, idx]
+            else:
+                break
+        
+        return low_train_sharp
+
+
+    #Soft transition (sigmoid)
+
+    else: 
+
+        eta = 3
+
+        sigmoid = 1 / (1 + np.power(data.k / k_cut), eta)
+        low_train_sigmoid = data.PS * sigmoid
+
+        return low_train_sigmoid
+
+
 def corner_plot(dataframe, title, filename, samples = None):
     
     colors = [
