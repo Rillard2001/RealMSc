@@ -215,20 +215,17 @@ def low_PS(data, k_cut, method, eta):
 
     if method == 'Gaussian':
 
-        gauss = np.exp( - np.power(data.k / k_cut, 2))
-        low_train_gauss = data.PS * gauss
-
-        return low_train_gauss
+        return data.PS * np.exp( - np.power(data.k / k_cut, 2))
 
 
     #Sharp cut
 
     elif method == 'SharpCut':
 
-        low_train_sharp = np.zeros_like(data.PS)
+        low_train_sharp = np.zeros_like(data.PS) + 1e-12
         for idx, k_value in enumerate(data.k):
             if k_value < k_cut:
-                low_train_sharp = data.PS[:, :, idx]
+                low_train_sharp[:, :, idx] = data.PS[:, :, idx]
             else:
                 break
         
@@ -239,12 +236,35 @@ def low_PS(data, k_cut, method, eta):
 
     else: 
 
-        eta = 3
+        return data.PS / (1 + np.power(data.k / k_cut, eta))
 
-        sigmoid = 1 / (1 + np.power(data.k / k_cut), eta)
-        low_train_sigmoid = data.PS * sigmoid
 
-        return low_train_sigmoid
+def plotting_Wk_vs_k(data, k_cut, eta):
+
+    gauss = np.exp( - np.power(data.k / k_cut, 2))
+
+    sharp = np.zeros_like(data.k)
+    for idx, k_value in enumerate(data.k):
+        if k_value < k_cut:
+            sharp[idx] = 1
+        else:
+            break
+
+    sigmoid = 1 / (1 + np.power(data.k / k_cut, eta))
+
+    plt.plot(data.k, gauss, color = 'b', label = 'Gaussian')
+    plt.scatter(data.k, gauss, color = 'b')
+    plt.plot(data.k, sharp, color = 'r', label = 'Sharp Cut')
+    plt.scatter(data.k, sharp, color = 'r')
+    plt.plot(data.k, sigmoid, color = 'g', label = 'Sigmoid')
+    plt.scatter(data.k, sigmoid, color = 'g')
+    plt.ylabel('W(k)')
+    plt.xlabel(r'k (Mpc$^{-1}$)')
+    plt.xlim(data.k[0] - 1e-2, data.k[-1] + 1e-2)
+    plt.legend()
+    plt.title('W(k) vs k')
+    plt.savefig('W(k) vs k', dpi = 300)
+    plt.show()
 
 
 def corner_plot(dataframe, title, filename, samples = None):
