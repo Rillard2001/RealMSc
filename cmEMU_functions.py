@@ -99,7 +99,7 @@ def lhs_sampler(num_rounds, label):
     return all_points
 
 
-def get_output(emu, num_rounds, label, batch_size):
+def get_output(num_rounds, label):
 
     if label == 'TrainingData':
         path_out = 'training_data_output_2986'
@@ -134,7 +134,7 @@ def get_output(emu, num_rounds, label, batch_size):
         else:
             break
     
-
+    """ 
     collect_outputs = {}
 
     for i in range(starting_round, num_rounds + 1):
@@ -186,7 +186,7 @@ def get_output(emu, num_rounds, label, batch_size):
             if attr_name not in all_outputs:
                 all_outputs[attr_name] = []
             all_outputs[attr_name].append(array_data)
-
+    """
     everything_merged = {}
     for attr_name, array_data in all_outputs.items():
         everything_merged[attr_name] = np.concatenate(array_data, axis = 0)
@@ -304,7 +304,7 @@ def corner_plot(dataframe, title, filename, samples = None):
     plt.show()
 
 
-def plotting_PS(true_data, emulated_data, fixed, size, k, z, filename):
+def plotting_PS(true_data, low_true_data, emulated_data, fixed, size, k, z, filename):
 
     rand = np.random.randint(0, len(true_data.PS), size = size)
 
@@ -322,7 +322,7 @@ def plotting_PS(true_data, emulated_data, fixed, size, k, z, filename):
 
         for i, c in zip(rand, cs):
 
-            plt.plot(true_data.PS_redshifts, true_data.PS[i, :, k], lw = 2, ls = '-', color = c)
+            plt.plot(true_data.PS_redshifts, low_true_data[i, :, k], lw = 2, ls = '-', color = c)
             plt.plot(true_data.PS_redshifts, emulated_data[i, :, k], lw = 2, ls = '-.', color = c)
         
         plt.ylabel(r'$\Delta_{21}^2$ [mk$^2$]', fontsize = fs)
@@ -339,7 +339,7 @@ def plotting_PS(true_data, emulated_data, fixed, size, k, z, filename):
 
         for i, c in zip(rand, cs):
 
-            plt.plot(true_data.k, true_data.PS[i, z, :], lw = 2, ls = '-', color = c)
+            plt.plot(true_data.k, low_true_data[i, z, :], lw = 2, ls = '-', color = c)
             plt.plot(true_data.k, emulated_data[i, z, :], lw = 2, ls = '-.', color = c)
     
         plt.ylabel(r'$\Delta_{21}^2$ [mk$^2$]', fontsize = fs)
