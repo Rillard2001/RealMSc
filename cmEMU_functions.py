@@ -17,6 +17,7 @@ def lhs_sampler(num_rounds, label):
 
     #test_param = [-1.3, 0.5, -1.0, -0.5, 8.7, 0.5, 40.5, 500.0, 1.0]
     column = ['F_STAR10', 'ALPHA_STAR', 'F_ESC10', 'ALPHA_ESC', 'M_TURN']
+        
 
     # lower_boundaries = [-3.0, -0.5, -3.0, -1.0, 8.0, 0.1, 38.0, 100.0, -1.0]
     # upper_boundaries = [-0.05, 1.0, -0.05, 0.5, 10.0, 1.0, 42.0, 1500.0, 3.0]
@@ -87,7 +88,6 @@ def lhs_sampler(num_rounds, label):
         df['NU_X_THRESH'] = 500.0
         df['X_RAY_SPEC_INDEX'] = 1.0
         df['Round'] = i
-
         df.to_hdf(f'GeneratedData/Input/{label}/{path}_r{i}_4fixed.h5', mode = 'w', key = 'Data')
 
         round_points.append(df)
@@ -306,7 +306,8 @@ def corner_plot(dataframe, title, filename, samples = None):
 
 def plotting_PS(true_data, low_true_data, emulated_data, fixed, size, k, z, filename):
 
-    rand = np.random.randint(0, len(true_data.PS), size = size)
+    rand = np.insert(np.random.randint(0, len(true_data.PS), size = size), round(size / 2), round(len(true_data.PS) / 2))
+    
 
     fs = 20
 
@@ -322,7 +323,7 @@ def plotting_PS(true_data, low_true_data, emulated_data, fixed, size, k, z, file
 
         for i, c in zip(rand, cs):
 
-            plt.plot(true_data.PS_redshifts, low_true_data[i, :, k], lw = 2, ls = '-', color = c)
+            plt.plot(true_data.PS_redshifts, true_data.PS[i, :, k], lw = 2, ls = '-', color = c)
             plt.plot(true_data.PS_redshifts, emulated_data[i, :, k], lw = 2, ls = '-.', color = c)
         
         plt.ylabel(r'$\Delta_{21}^2$ [mk$^2$]', fontsize = fs)
@@ -339,12 +340,13 @@ def plotting_PS(true_data, low_true_data, emulated_data, fixed, size, k, z, file
 
         for i, c in zip(rand, cs):
 
-            plt.plot(true_data.k, low_true_data[i, z, :], lw = 2, ls = '-', color = c)
+            plt.plot(true_data.k, true_data.PS[i, z, :], lw = 2, ls = '-', color = c)
             plt.plot(true_data.k, emulated_data[i, z, :], lw = 2, ls = '-.', color = c)
     
         plt.ylabel(r'$\Delta_{21}^2$ [mk$^2$]', fontsize = fs)
         plt.xlabel(r'k (Mpc$^{-1}$)', fontsize = fs)
         plt.xlim(true_data.k[0] - 1e-2, true_data.k[-1] + 1e-2)
+        plt.ylim(2e-3, 6e3)
         plt.yticks(fontsize = fs)
         plt.xticks(fontsize = fs)
         plt.yscale('log')
