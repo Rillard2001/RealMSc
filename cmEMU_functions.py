@@ -304,9 +304,11 @@ def corner_plot(dataframe, title, filename, samples = None):
     plt.show()
 
 
-def plotting_PS(true_data, low_true_data, emulated_data, fixed, size, k, z, filename):
+def plotting_PS(true_data, low_true_data, emulated_data, varying, size, k, z, filename):
 
-    rand = np.insert(np.random.randint(0, len(true_data.PS), size = size), round(size / 2), round(len(true_data.PS) / 2))
+    np.random.seed(42)
+
+    rand = np.random.randint(0, len(true_data.PS), size = size)
     
 
     fs = 20
@@ -319,7 +321,7 @@ def plotting_PS(true_data, low_true_data, emulated_data, fixed, size, k, z, file
         'tan', 'darkgreen', 'darkblue'
     ]
 
-    if fixed == 'zs':
+    if varying == 'zs':
 
         for i, c in zip(rand, cs):
 
@@ -333,6 +335,7 @@ def plotting_PS(true_data, low_true_data, emulated_data, fixed, size, k, z, file
         plt.xticks(fontsize = fs)
         plt.yscale('log')
         plt.title('21cmEMU Power Spectrum', fontsize = fs)
+        plt.tight_layout()
         plt.savefig(filename, dpi = 300)
         plt.show()
             
@@ -351,6 +354,7 @@ def plotting_PS(true_data, low_true_data, emulated_data, fixed, size, k, z, file
         plt.xticks(fontsize = fs)
         plt.yscale('log')
         plt.title('21cmEMU Power Spectrum', fontsize = fs)
+        plt.tight_layout()
         plt.savefig(filename, dpi = 300)
         plt.show()
 
