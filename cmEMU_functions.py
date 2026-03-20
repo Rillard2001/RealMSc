@@ -379,7 +379,6 @@ class EarlyStopping:
                 if self.verbose:
                     print("Stopping early as no improvement has been observed.")
 
-#mat1 and mat2 shapes cannot be multiplied (3840x12 and 9x480)
 
 class PSNN(nn.Module):
     def __init__(self, input_dim, layers):
