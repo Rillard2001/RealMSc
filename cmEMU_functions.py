@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.stats import qmc
-from expandLHS import ExpandLHS
+#from expandLHS import ExpandLHS
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -16,14 +16,15 @@ import h5py
 def lhs_sampler(num_rounds, label):
 
     #test_param = [-1.3, 0.5, -1.0, -0.5, 8.7, 0.5, 40.5, 500.0, 1.0]
-    column = ['F_STAR10', 'ALPHA_STAR', 'F_ESC10', 'ALPHA_ESC', 'M_TURN']
+    column = ['F_STAR10', 'ALPHA_STAR', 'F_ESC10', 'ALPHA_ESC', 'M_TURN', 't_STAR', 'L_X', 'NU_X_THRESH', 'X_RAY_SPEC_INDEX']
+
         
 
-    # lower_boundaries = [-3.0, -0.5, -3.0, -1.0, 8.0, 0.1, 38.0, 100.0, -1.0]
-    # upper_boundaries = [-0.05, 1.0, -0.05, 0.5, 10.0, 1.0, 42.0, 1500.0, 3.0]
+    lower_boundaries = [-3.0, -0.5, -3.0, -1.0, 8.0, 0.1, 38.0, 100.0, -1.0]
+    upper_boundaries = [-0.05, 1.0, -0.05, 0.5, 10.0, 1.0, 42.0, 1500.0, 3.0]
 
-    lower_boundaries = [-3.0, -0.5, -3.0, -1.0, 8.0]
-    upper_boundaries = [-0.05, 1.0, -0.05, 0.5, 10.0]
+    # lower_boundaries = [-3.0, -0.5, -3.0, -1.0, 8.0]
+    # upper_boundaries = [-0.05, 1.0, -0.05, 0.5, 10.0]
 
 
 
@@ -44,9 +45,9 @@ def lhs_sampler(num_rounds, label):
     sample = None
 
     for i in range(1, num_rounds + 1):
-        if os.path.exists(f'GeneratedData/Input/{label}/{path}_r{i}_4fixed.h5'):
+        if os.path.exists(f'GeneratedData/Input/{label}/{path}_r{i}.h5'):
             print('Loading')
-            data_input = pd.read_hdf(f'GeneratedData/Input/{label}/{path}_r{i}_4fixed.h5')
+            data_input = pd.read_hdf(f'GeneratedData/Input/{label}/{path}_r{i}.h5')
             round_points.append(data_input)
             unscaled_points = qmc.scale(data_input[column].values, lower_boundaries, upper_boundaries, reverse = True)
 
@@ -58,7 +59,7 @@ def lhs_sampler(num_rounds, label):
         else:
             break
 
-    
+    """
     for i in range(starting_point, num_rounds + 1):
                 
         if i == 1:
@@ -83,15 +84,17 @@ def lhs_sampler(num_rounds, label):
         round_sample_scaled = qmc.scale(sliced_unscaled_points, lower_boundaries, upper_boundaries)
 
         df = pd.DataFrame(round_sample_scaled, columns = column)
-        df['t_STAR'] = 0.5
-        df['L_X'] = 40.5
-        df['NU_X_THRESH'] = 500.0
-        df['X_RAY_SPEC_INDEX'] = 1.0
+
+        #             df['t_STAR'] = 0.5
+        # df['L_X'] = 40.5
+        # df['NU_X_THRESH'] = 500.0
+        # df['X_RAY_SPEC_INDEX'] = 1.0
+
         df['Round'] = i
-        df.to_hdf(f'GeneratedData/Input/{label}/{path}_r{i}_4fixed.h5', mode = 'w', key = 'Data')
+        df.to_hdf(f'GeneratedData/Input/{label}/{path}_r{i}.h5', mode = 'w', key = 'Data')
 
         round_points.append(df)
-
+    """
 
     all_points = pd.concat(round_points, ignore_index = True)
 
@@ -119,10 +122,10 @@ def get_output(num_rounds, label):
     starting_round = 1
 
     for i in range(1, num_rounds + 1):
-        if os.path.exists(f'GeneratedData/Output/{label}/{path_out}_r{i}_4fixed.h5'):
+        if os.path.exists(f'GeneratedData/Output/{label}/{path_out}_r{i}.h5'):
             print(f'Loading emulated round {i}')
     
-            with h5py.File(f'GeneratedData/Output/{label}/{path_out}_r{i}_4fixed.h5', 'r') as hf:
+            with h5py.File(f'GeneratedData/Output/{label}/{path_out}_r{i}.h5', 'r') as hf:
 
                 for attr_name in hf.keys():
                     if attr_name not in all_outputs:  # load in the previous output data to not have to redo emulating
@@ -139,10 +142,10 @@ def get_output(num_rounds, label):
 
     for i in range(starting_round, num_rounds + 1):
 
-        if not os.path.exists(f'GeneratedData/Input/{label}/{path_in}_r{i}_4fixed.h5'):  # check if we have a file
+        if not os.path.exists(f'GeneratedData/Input/{label}/{path_in}_r{i}.h5'):  # check if we have a file
             break
 
-        data_input = pd.read_hdf(f'GeneratedData/Input/{label}/{path_in}_r{i}_4fixed.h5')  # load in the input data to be emulated
+        data_input = pd.read_hdf(f'GeneratedData/Input/{label}/{path_in}_r{i}.h5')  # load in the input data to be emulated
         dropped_round = data_input.drop(['Round'], axis = 1)
         input_data = dropped_round.to_dict('records')
 
@@ -176,7 +179,7 @@ def get_output(num_rounds, label):
             combine[attr_name] = np.concatenate(array_list, axis = 0)  # here we merge the values from the different output rounds
 
 
-        with h5py.File(f'GeneratedData/Output/{label}/{path_out}_r{i}_4fixed.h5', 'w') as hf:  # saving that rounds emulation data
+        with h5py.File(f'GeneratedData/Output/{label}/{path_out}_r{i}.h5', 'w') as hf:  # saving that rounds emulation data
             for attr_name, array_data in combine.items():
                 hf.create_dataset(attr_name, data = array_data)
             print(f'Saved emulated round {i}')
@@ -306,7 +309,7 @@ def corner_plot(dataframe, title, filename, samples = None):
 
 def plotting_PS(true_data, low_true_data, emulated_data, varying, size, k, z, filename):
 
-    np.random.seed(42)
+    np.random.seed(123)
 
     rand = np.random.randint(0, len(true_data.PS), size = size)
     
