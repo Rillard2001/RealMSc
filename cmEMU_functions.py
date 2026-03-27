@@ -30,32 +30,32 @@ def lhs_sampler(num_rounds, label):
 
     if label == 'TrainingData':
         path = 'training_data_input_2986'
-        n_samples = 2986
+        #n_samples = 2986
 
     elif label == 'ValidationData':
         path = 'validation_data_input_746'
-        n_samples = 746
+        #n_samples = 746
 
     else:
         path = 'test_data_input_933'
-        n_samples = 933
+        #n_samples = 933
 
     round_points = []
-    starting_point = 1
-    sample = None
+    # starting_point = 1
+    # sample = None
 
     for i in range(1, num_rounds + 1):
         if os.path.exists(f'GeneratedData/Input/{label}/{path}_r{i}.h5'):
             print('Loading')
             data_input = pd.read_hdf(f'GeneratedData/Input/{label}/{path}_r{i}.h5')
             round_points.append(data_input)
-            unscaled_points = qmc.scale(data_input[column].values, lower_boundaries, upper_boundaries, reverse = True)
+            #unscaled_points = qmc.scale(data_input[column].values, lower_boundaries, upper_boundaries, reverse = True)
 
-            if sample is None:
-                sample = unscaled_points
-            else:
-                sample = np.vstack((sample, unscaled_points))
-            starting_point = i + 1
+            # if sample is None:
+            #     sample = unscaled_points
+            # else:
+            #     sample = np.vstack((sample, unscaled_points))
+            # starting_point = i + 1
         else:
             break
 
