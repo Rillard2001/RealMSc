@@ -222,6 +222,17 @@ def get_21cmoutput(label):
     props.user_params['HII_DIM'] = 256
     props.user_params['DIM'] = 768
     props.user_params['N_THREADS'] = 60
+    props.flag_options = p21c.FlagOptions(
+        USE_HALO_FIELD = False,
+        USE_MINI_HALOS = False,
+        USE_MASS_DEPENDENT_ZETA = True,
+        SUBCELL_RSD = True,
+        INHOMO_RECO = True,
+        USE_TS_FLUCT = True,
+        M_MIN_in_Mass = False,
+        PHOTON_CONS = True,
+        FIX_VCB_AVG = False
+    )
 
     if label == 'TrainingData':
         path_out = 'training_data_output_2986'
