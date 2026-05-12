@@ -9,6 +9,10 @@ import os
 import torch.nn as nn
 import torch.nn.functional as F
 
+import py21cmfast as p21c
+from py21cmemu.properties import emulator_properties
+import tools21cm
+
 from types import SimpleNamespace
 import h5py
 
@@ -198,6 +202,98 @@ def get_output(num_rounds, label):
 
 
     return output
+
+def get_21cmoutput(label):
+
+    emu_redshifts = [ 5.90059,   6.038602,  6.179374  ,6.322961  ,6.46942   ,6.618808 , 6.771184,
+  6.926608  ,7.08514   ,7.246843,  7.411779  ,7.580015  ,7.751615  ,7.926647,
+  8.10518   ,8.287283  ,8.473028,  8.662489  ,8.855739  ,9.052854  ,9.25391,
+  9.458988  ,9.668168  ,9.881531, 10.09916  ,10.32114  ,10.54757  ,10.77852,
+ 11.01409  ,11.25437  ,11.49946, 11.74944  ,12.00443  ,12.26452  ,12.52981,
+ 12.80041  ,13.07641  ,13.35794,  13.6451   ,13.938    ,14.23676  ,14.5415,
+ 14.85233  ,15.16937  ,15.49276 , 15.82262  ,16.15907  ,16.50225  ,16.85229,
+ 17.20934  ,17.57353  ,17.945   , 18.3239   ,18.71038  ,19.10458  ,19.50668,
+ 19.91681  ,20.33514  ,20.76185  ,21.19708]
+    
+    real_k_values = np.array([0.03720577, 0.03920577, 0.07529437, 0.08026625000000001, 0.12300975, 0.14641164999999998, 0.21662555000000003, 0.27229464999999997, 
+0.38765215, 0.50454325, 0.6998539500000001, 0.92651025, 1.26932375, 1.54078924, 2.1156804])
+    
+    props = emulator_properties()
+    props.user_params['HII_DIM'] = 256
+    props.user_params['DIM'] = 768
+    props.user_params['N_THREADS'] = 60
+
+    if label == 'TrainingData':
+        path_out = 'training_data_output_2986'
+        path_in = 'training_data_input_2986_FAST'
+
+    elif label == 'ValidationData':
+        path_in = 'validation_data_input_746'
+        path_out = 'validation_data_output_746_FAST'
+
+    else:
+        path_in = 'test_data_input_933'
+        path_out = 'test_data_output_933_FAST'
+
+    out_file_path = f'GeneratedData/Output/{label}/{path_out}.h5'
+    in_file_path = f'GeneratedData/Input/{label}/{path_in}.h5'
+
+
+    
+    if os.path.exists(out_file_path):
+        print(f'Loading existing data for {label}')
+        with h5py.File(out_file_path, 'r') as hf:
+            ps_array = hf['PS'][:]
+            k_array = hf['k'][:]
+        return ps_array, k_array
+    
+    data_input = pd.read_hdf(in_file_path)
+    
+    # Drop 'Round' if it exists in the dataframe, ignore errors if it doesn't
+    dropped_round = data_input.drop(['Round'], axis=1, errors='ignore')
+    input_data = dropped_round.to_dict('records')
+    
+
+    all_PS = []
+    k_values = None
+
+    for idx, input_dict in enumerate(input_data):
+        print(f"Processing sample {idx+1}/{len(input_data)}")
+    
+        ap = p21c.AstroParams(**input_dict)
+
+        coeval = p21c.run_coeval(redshift = emu_redshifts,
+            user_params = props.user_params,
+            astro_params = ap,
+            flag_options = props.flag_options,
+            cosmo_params = props.cosmo_params,
+            write = False,
+            random_seed = 12345,
+            cleanup = True,
+            direc = '_cache'
+            )
+        
+        single_PS = []
+
+        for box in coeval:
+            PS, k = tools21cm.power_spectrum.power_spectrum_1d(box.brightness_temp, box_dims= props.user_params['BOX_LEN'], kbins=real_k_values)
+            single_PS.append(PS)
+            k_values = k
+
+        single_PS = np.array(single_PS)
+
+        all_PS.append(single_PS)
+    
+    master_PS_array = np.array(all_PS) * (k_values)**3 / (2 * np.pi**2)
+
+    with h5py.File(out_file_path, 'w') as hf:
+        hf.create_dataset('PS', data = master_PS_array)
+        hf.create_dataset('k', data = k_values)
+        print(f'Saved generated data to {out_file_path}')
+
+
+
+    return master_PS_array, k_values
 
 
 def get_unique(data):
