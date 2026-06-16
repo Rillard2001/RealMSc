@@ -1,0 +1,1 @@
+21cmEMU_TrainingData.ipynb and train_21cmfast_emulator.ipynb both uses cmEMU_functions.py to create, generate and load in the nine astrophysical parameters as input and the 21 cm power spectrum as output for both 21cmEMU data and 21cmFAST data. These files also train multiple emulator with and without transfer learning.
