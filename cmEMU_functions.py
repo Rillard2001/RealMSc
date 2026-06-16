@@ -9,10 +9,6 @@ import os
 import torch.nn as nn
 import torch.nn.functional as F
 
-import py21cmfast as p21c
-from py21cmemu.properties import emulator_properties
-import tools21cm
-
 from types import SimpleNamespace
 import h5py
 
@@ -20,12 +16,12 @@ import h5py
 def lhs_sampler(num_rounds, label):
 
     #test_param = [-1.3, 0.5, -1.0, -0.5, 8.7, 0.5, 40.5, 500.0, 1.0]
-    # column = ['F_STAR10', 'ALPHA_STAR', 'F_ESC10', 'ALPHA_ESC', 'M_TURN', 't_STAR', 'L_X', 'NU_X_THRESH', 'X_RAY_SPEC_INDEX']
+    column = ['F_STAR10', 'ALPHA_STAR', 'F_ESC10', 'ALPHA_ESC', 'M_TURN', 't_STAR', 'L_X', 'NU_X_THRESH', 'X_RAY_SPEC_INDEX']
 
         
 
-    # lower_boundaries = [-3.0, -0.5, -3.0, -1.0, 8.0, 0.1, 38.0, 100.0, -1.0]
-    # upper_boundaries = [-0.05, 1.0, -0.05, 0.5, 10.0, 1.0, 42.0, 1500.0, 3.0]
+    lower_boundaries = [-3.0, -0.5, -3.0, -1.0, 8.0, 0.1, 38.0, 100.0, -1.0]
+    upper_boundaries = [-0.05, 1.0, -0.05, 0.5, 10.0, 1.0, 42.0, 1500.0, 3.0]
 
     # lower_boundaries = [-3.0, -0.5, -3.0, -1.0, 8.0]
     # upper_boundaries = [-0.05, 1.0, -0.05, 0.5, 10.0]
@@ -203,108 +199,52 @@ def get_output(num_rounds, label):
 
     return output
 
-def get_21cmoutput(label):
 
-    emu_redshifts = [ 5.90059,   6.038602,  6.179374  ,6.322961  ,6.46942   ,6.618808 , 6.771184,
-  6.926608  ,7.08514   ,7.246843,  7.411779  ,7.580015  ,7.751615  ,7.926647,
-  8.10518   ,8.287283  ,8.473028,  8.662489  ,8.855739  ,9.052854  ,9.25391,
-  9.458988  ,9.668168  ,9.881531, 10.09916  ,10.32114  ,10.54757  ,10.77852,
- 11.01409  ,11.25437  ,11.49946, 11.74944  ,12.00443  ,12.26452  ,12.52981,
- 12.80041  ,13.07641  ,13.35794,  13.6451   ,13.938    ,14.23676  ,14.5415,
- 14.85233  ,15.16937  ,15.49276 , 15.82262  ,16.15907  ,16.50225  ,16.85229,
- 17.20934  ,17.57353  ,17.945   , 18.3239   ,18.71038  ,19.10458  ,19.50668,
- 19.91681  ,20.33514  ,20.76185  ,21.19708]
-    
-    real_k_values = np.array([0.03720577, 0.03920577, 0.07529437, 0.08026625000000001, 0.12300975, 0.14641164999999998, 0.21662555000000003, 0.27229464999999997, 
-0.38765215, 0.50454325, 0.6998539500000001, 0.92651025, 1.26932375, 1.54078924, 2.1156804])
-    
-    props = emulator_properties()
-    props.user_params['HII_DIM'] = 256
-    props.user_params['DIM'] = 768
-    props.user_params['N_THREADS'] = 60
-    props.flag_options = p21c.FlagOptions(
-        USE_HALO_FIELD = False,
-        USE_MINI_HALOS = False,
-        USE_MASS_DEPENDENT_ZETA = True,
-        SUBCELL_RSD = True,
-        INHOMO_RECO = True,
-        USE_TS_FLUCT = True,
-        M_MIN_in_Mass = False,
-        PHOTON_CONS = True,
-        FIX_VCB_AVG = False
-    )
+def get_21cmfast_input_and_output(label):
 
-    if label == 'TrainingData':
-        path_out = 'training_data_output_2986'
-        path_in = 'training_data_input_2986_FAST'
-
-    elif label == 'ValidationData':
-        path_in = 'validation_data_input_746'
-        path_out = 'validation_data_output_746_FAST'
-
+    if label == 'Tr':
+        input_path = 'GeneratedData/Input/TrainingData/training_data_input_2986_r1.h5'
+        output_path_EMU = 'GeneratedData/Output/TrainingData/training_data_output_2986_r1.h5'
+        output_path_FAST = 'GeneratedData/Output/TrainingData/training_data_output_2986_FAST.h5'
+    elif label == "V":
+        input_path = 'GeneratedData/Input/ValidationData/validation_data_input_746_r1.h5'
+        output_path_EMU = 'GeneratedData/Output/ValidationData/validation_data_output_746_r1.h5'
+        output_path_FAST = 'GeneratedData/Output/ValidationData/validation_data_output_746_FAST.h5'
     else:
-        path_in = 'test_data_input_933'
-        path_out = 'test_data_output_933_FAST'
+        input_path = 'GeneratedData/Input/TestData/test_data_input_933_r1.h5'
+        output_path_EMU = 'GeneratedData/Output/TestData/test_data_output_933_r1.h5'
+        output_path_FAST = 'GeneratedData/Output/TestData/test_data_output_933_FAST.h5'
 
-    out_file_path = f'GeneratedData/Output/{label}/{path_out}.h5'
-    in_file_path = f'GeneratedData/Input/{label}/{path_in}.h5'
+    data_input = pd.read_hdf(input_path)
+    data_input = data_input.drop(['Round'], axis=1, errors='ignore')
 
+    all_outputs = {}
+    with h5py.File(output_path_EMU, 'r') as hf:
+        for attr_name in hf.keys():
+            all_outputs[attr_name] = hf[attr_name][:]
 
+    with h5py.File(output_path_FAST, 'r') as hf:
+        completed_idx = hf.attrs.get('completed', 0)
+
+        processed_PS_array = hf['PS'][:completed_idx]
+
+    processed_inputs = data_input.iloc[:completed_idx]
     
-    if os.path.exists(out_file_path):
-        print(f'Loading existing data for {label}')
-        with h5py.File(out_file_path, 'r') as hf:
-            ps_array = hf['PS'][:]
-            k_array = hf['k'][:]
-        return ps_array, k_array
-    
-    data_input = pd.read_hdf(in_file_path)
-    
-    # Drop 'Round' if it exists in the dataframe, ignore errors if it doesn't
-    dropped_round = data_input.drop(['Round'], axis=1, errors='ignore')
-    input_data = dropped_round.to_dict('records')
-    
+    valid_mask = ~np.isnan(processed_PS_array).all(axis=(1, 2))
 
-    all_PS = []
-    k_values = None
+    clean_PS = processed_PS_array[valid_mask]
+    clean_input = processed_inputs[valid_mask]
 
-    for idx, input_dict in enumerate(input_data):
-        print(f"Processing sample {idx+1}/{len(input_data)}")
-    
-        ap = p21c.AstroParams(**input_dict)
+    emu_sliced = {}
+    for key, array in all_outputs.items():
+        if array.shape[0] >= completed_idx and array.ndim > 0:
+            emu_sliced[key] = array[:completed_idx][valid_mask]
+        else:
+            emu_sliced[key] = array
 
-        coeval = p21c.run_coeval(redshift = emu_redshifts,
-            user_params = props.user_params,
-            astro_params = ap,
-            flag_options = props.flag_options,
-            cosmo_params = props.cosmo_params,
-            write = False,
-            random_seed = 12345,
-            cleanup = True,
-            direc = '_cache'
-            )
-        
-        single_PS = []
+    emu_PS = SimpleNamespace(**emu_sliced)
 
-        for box in coeval:
-            PS, k = tools21cm.power_spectrum.power_spectrum_1d(box.brightness_temp, box_dims= props.user_params['BOX_LEN'], kbins=real_k_values)
-            single_PS.append(PS)
-            k_values = k
-
-        single_PS = np.array(single_PS)
-
-        all_PS.append(single_PS)
-    
-    master_PS_array = np.array(all_PS) * (k_values)**3 / (2 * np.pi**2)
-
-    with h5py.File(out_file_path, 'w') as hf:
-        hf.create_dataset('PS', data = master_PS_array)
-        hf.create_dataset('k', data = k_values)
-        print(f'Saved generated data to {out_file_path}')
-
-
-
-    return master_PS_array, k_values
+    return clean_input, clean_PS, emu_PS
 
 
 def get_unique(data):
@@ -322,31 +262,30 @@ def get_unique(data):
 def low_PS(data, k_cut, method, eta):
 
     #Gaussian
+        if method == 'Gaussian':
 
-    if method == 'Gaussian':
-
-        return data.PS * np.exp( - np.power(data.k / k_cut, 2))
-
-
-    #Sharp cut
-
-    elif method == 'SharpCut':
-
-        low_train_sharp = np.zeros_like(data.PS) + 1e-12
-        for idx, k_value in enumerate(data.k):
-            if k_value < k_cut:
-                low_train_sharp[:, :, idx] = data.PS[:, :, idx]
-            else:
-                break
-        
-        return low_train_sharp
+            return data.PS * np.exp( - np.power(data.k / k_cut, 2))
 
 
-    #Soft transition (sigmoid)
+        #Sharp cut
 
-    else: 
+        elif method == 'SharpCut':
 
-        return data.PS / (1 + np.power(data.k / k_cut, eta))
+            low_train_sharp = np.zeros_like(data.PS) + 1e-12
+            for idx, k_value in enumerate(data.k):
+                if k_value < k_cut:
+                    low_train_sharp[:, :, idx] = data.PS[:, :, idx]
+                else:
+                    break
+            
+            return low_train_sharp
+
+
+        #Soft transition (sigmoid)
+
+        else: 
+
+            return data.PS / (1 + np.power(data.k / k_cut, eta))
 
 
 def plotting_Wk_vs_k(data, k_cut, eta):
@@ -386,23 +325,9 @@ def corner_plot(dataframe, title, filename, samples = None):
     'plum', 'orchid', 'crimson', 'tomato', 'sienna', 'chocolate', 'peru',
     'tan', 'darkgreen', 'darkblue'
 ]
-    
-    latex_mapping = {
-        'ALPHA_STAR': r'$\alpha_{\star}$',
-        'ALPHA_ESC': r'$\alpha_{\mathrm{esc}}$',
-        'F_STAR10': r'$f_{\star,10}$',
-        'F_ESC10': r'$f_{\mathrm{esc},10}$',
-        'M_TURN': r'$M_{\mathrm{turn}}$',
-        't_STAR': r'$t_{\star}$',
-        'L_X' : r'$L_{X}$',
-        "NU_X_THRESH" : r'$E_0$',
-        "X_RAY_SPEC_INDEX" : r'$\alpha_{X}$'
-        }
-
-    dataframe = dataframe.rename(columns=latex_mapping)
     palette = []
 
-    sns.set(style = "ticks", font_scale = 1.5)
+    sns.set(style = "ticks")
 
     if samples is not None:
         dataframe = dataframe.sample(n = samples)
@@ -424,7 +349,7 @@ def corner_plot(dataframe, title, filename, samples = None):
                 ax.tick_params(direction = 'in', top = True, right = True, length = 4, width = 2, colors = 'black')
                 ax.spines['top'].set_visible(True)
                 ax.spines['right'].set_visible(True)
-    plt.savefig(filename, dpi = 300, bbox_inches = "tight")
+    plt.savefig(filename, dpi = 300)
     plt.show()
 
 
@@ -436,7 +361,25 @@ def plotting_PS(true_data, emulated_data_sig, emulated_data_sharp, varying, size
     
 
     fs = 20
-
+    cs2 = ['blue', 'darkblue', 'turquoise', 'brown', 'chocolate', 'khaki', 'green', 'darkgreen', 'cyan', 
+          'indigo', 'purple', 'magenta', 'salmon', 'orange', 'tan']
+    color_families = [
+        ('navy', 'royalblue', 'lightskyblue'),          # 1. Blues
+        ('darkred', 'crimson', 'lightcoral'),           # 2. Reds
+        ('darkgreen', 'forestgreen', 'palegreen'),      # 3. Greens
+        ('indigo', 'darkorchid', 'plum'),               # 4. Purples
+        ('saddlebrown', 'chocolate', 'sandybrown'),     # 5. Browns/Oranges
+        ('darkcyan', 'c', 'aquamarine'),                # 6. Cyans
+        ('mediumvioletred', 'deeppink', 'hotpink'),     # 7. Pinks
+        ('maroon', 'brown', 'rosybrown'),               # 8. Dark Reds
+        ('black', 'dimgray', 'darkgray'),               # 9. Greys
+        ('darkgoldenrod', 'goldenrod', 'khaki'),        # 10. Golds
+        ('darkolivegreen', 'olivedrab', 'yellowgreen'), # 11. Olives
+        ('darkmagenta', 'm', 'violet'),                 # 12. Magentas
+        ('firebrick', 'indianred', 'salmon'),           # 13. Corals
+        ('teal', 'lightseagreen', 'paleturquoise'),     # 14. Teals
+        ('midnightblue', 'slateblue', 'mediumpurple')   # 15. Slates
+    ]
     cs = [
         'red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray',
         'olive', 'cyan', 'magenta', 'yellow', 'teal', 'navy', 'maroon', 'lime',
@@ -445,16 +388,21 @@ def plotting_PS(true_data, emulated_data_sig, emulated_data_sharp, varying, size
         'tan', 'darkgreen', 'darkblue'
     ]
 
-    lines = ['-', '--', '-.', ':', (0, (5, 10))]
+    #lines = ['-', '--', '-.', ':', (0, (5, 10))]
 
     if varying == 'zs':
         
 
-        for i, l in zip(rand, lines):
+        for i, (c_true, c_sig, c_sharp) in zip(rand, color_families):
 
-            plt.plot(true_data.PS_redshifts, true_data.PS[i, :, k], lw = 2, ls = l, color = 'black', alpha = 0.6)
-            plt.plot(true_data.PS_redshifts, emulated_data_sig[i, :, k], lw = 2, ls = l, color = 'blue', alpha = 0.6)
-            plt.plot(true_data.PS_redshifts, emulated_data_sharp[i, :, k], lw = 2, ls = l, color = 'red', alpha = 0.6)
+            plt.plot(true_data.PS_redshifts, true_data.PS[i, :, k], lw = 2, ls = '-', color = c_true, alpha = 0.6)
+            plt.plot(true_data.PS_redshifts, emulated_data_sig[i, :, k], lw = 2, ls = '--', color = c_sig, alpha = 0.9)
+            plt.plot(true_data.PS_redshifts, emulated_data_sharp[i, :, k], lw = 2, ls = '-.', color = c_sharp, alpha = 0.9)
+        
+        plt.plot([], [], lw=2, ls='-', color='gray', label='True data')
+        plt.plot([], [], lw=2, ls='--', color='gray', label='Sigmoid')
+        plt.plot([], [], lw=2, ls='-.', color='gray', label='Sharp Cut')
+        plt.legend(fontsize=10, loc='best')
         
         plt.ylabel(r'$\Delta_{21}^2$ [mk$^2$]', fontsize = fs)
         plt.xlabel(r'Redshift z', fontsize = fs)
@@ -469,11 +417,16 @@ def plotting_PS(true_data, emulated_data_sig, emulated_data_sharp, varying, size
             
     else:
 
-        for i, l in zip(rand, lines):
+        for i, (c_true, c_sig, c_sharp) in zip(rand, color_families):
 
-            plt.plot(true_data.k, true_data.PS[i, z, :], lw = 2, ls = l, color = 'black', alpha = 0.6)
-            plt.plot(true_data.k, emulated_data_sig[i, z, :], lw = 2, ls = l, color = 'blue', alpha = 0.6)
-            plt.plot(true_data.k, emulated_data_sharp[i, z, :], lw = 2, ls = l, color = 'red', alpha = 0.6)
+            plt.plot(true_data.k, true_data.PS[i, z, :], lw = 2, ls = '-', color = c_true, alpha = 0.6)
+            plt.plot(true_data.k, emulated_data_sig[i, z, :], lw = 2, ls = '--', color = c_sig, alpha = 0.9)
+            plt.plot(true_data.k, emulated_data_sharp[i, z, :], lw = 2, ls = '-.', color = c_sharp, alpha = 0.9)
+        
+        # plt.plot([], [], lw=2, ls='-', color='gray', label='True data')
+        # plt.plot([], [], lw=2, ls='--', color='gray', label='Sigmoid')
+        # plt.plot([], [], lw=2, ls='-.', color='gray', label='Sharp Cut')
+        # plt.legend(fontsize=10, loc='best')
     
         plt.ylabel(r'$\Delta_{21}^2$ [mk$^2$]', fontsize = fs)
         plt.xlabel(r'k (Mpc$^{-1}$)', fontsize = fs)
@@ -510,8 +463,10 @@ class EarlyStopping:
 
 
 class PSNN(nn.Module):
-    def __init__(self, input_dim, layers):
+    def __init__(self, input_dim, layers, label):
         super().__init__()
+
+        self.label = label
 
         network = []
         current_dim = input_dim
@@ -522,17 +477,23 @@ class PSNN(nn.Module):
             network.append(nn.ReLU())
             network.append(nn.Dropout(0.2))
             current_dim = hidden_dim
-
-        network.append(nn.Linear(current_dim, 720))
+        if label == 'EMU':
+            output_dim = 720
+        else:
+            output_dim = 780
+        network.append(nn.Linear(current_dim, output_dim))
         self.net = nn.Sequential(*network)
 
     def forward(self, x): 
 
         output = self.net(x)
-
-        PS_2D = output.view(-1, 60, 12)
+        if self.label == 'EMU':
+            k_dim = 12
+        else:
+            k_dim = 13
+        PS_3D = output.view(-1, 60, k_dim)
         
-        return PS_2D
+        return PS_3D
     
 
 def save_file(label, n_rounds, final_output):
